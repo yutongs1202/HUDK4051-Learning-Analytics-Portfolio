@@ -1,0 +1,1203 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "source": [
+        "#Mini LA Assignment 2 - Knowledge Inference\n",
+        "#### **Authors**: Yutong Shen, Jingfei Chen, Yiran Wang"
+      ],
+      "metadata": {
+        "id": "p_kVxO73IQUK"
+      },
+      "id": "p_kVxO73IQUK"
+    },
+    {
+      "cell_type": "markdown",
+      "id": "305b95ec",
+      "metadata": {
+        "id": "305b95ec"
+      },
+      "source": [
+        "**Problem Statement:** \n",
+        "- Can you predict whether a particular student will be able to answer a question correctly at a given stage of their learning?\n"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "**Tasks:**\n",
+        "\n",
+        "- Overview of the purpose of the project, the problem statement, and some related work if appropriate to the question.\n",
+        "\n",
+        "- Model implementation (i.e., parameters, fitting procedure, and model performance)\n",
+        "\n",
+        "- A brief interpretation of the results regarding the question.\n",
+        "\n",
+        "- A brief discussion on your insights, challenges, and/or lessons learned."
+      ],
+      "metadata": {
+        "id": "yK1umge-J0qb"
+      },
+      "id": "yK1umge-J0qb"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "## Problem & Purpose\n",
+        "During this assignment, we aim to predict student performance on problems from student interactions with Intelligent Tutoring Systems through an Assistments dataset. It is worthwile to assess knowledge acquisition by evaluating students' adaptability to different learning materials and activities. The purpose is to establish a better ITS and further help students improve their learning outcomes.\n"
+      ],
+      "metadata": {
+        "id": "HC449GIZMymr"
+      },
+      "id": "HC449GIZMymr"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "## Literature Review\n",
+        "We found an empirical article that was closely related to knowledge inference and Intelligent Tutoring Systems. Ramírez-Noriega, Juárez-Ramírez, & Martínez-Ramírez (2017) talked about the examples of how Bayesian network helped reinforce the weak topics within the ITS and provided better accuracy in the diagnostic of students' knowledge procession. The process of building a Bayesian network and the explanation of how to increase the accuracy of inferring knowledge (including different variables) had some referential value for our assignment. "
+      ],
+      "metadata": {
+        "id": "PDo8EGPzMtET"
+      },
+      "id": "PDo8EGPzMtET"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### 1. Import Data"
+      ],
+      "metadata": {
+        "id": "kYJ2wR_aNMvg"
+      },
+      "id": "kYJ2wR_aNMvg"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "db76ab69",
+      "metadata": {
+        "id": "db76ab69"
+      },
+      "outputs": [],
+      "source": [
+        "import numpy as np\n",
+        "import pandas as pd"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "475db5e3",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 424
+        },
+        "id": "475db5e3",
+        "outputId": "129a4aaa-5a52-4cc7-c941-8abf119abee6"
+      },
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "            ID                 Lesson  Student                    KC  \\\n",
+              "0            0                  Splot  AGUFADE  VALUING-CAT-FEATURES   \n",
+              "1            1                  Splot  AGUFADE  VALUING-NUM-FEATURES   \n",
+              "2            2                  Splot  AGUFADE       CHOOSE-VAR-TYPE   \n",
+              "3            3                  Splot  AGUFADE  VALUING-NUM-FEATURES   \n",
+              "4            4                  Splot  AGUFADE       CHOOSE-VAR-TYPE   \n",
+              "...        ...                    ...      ...                   ...   \n",
+              "124365  128869  MidZSchoolZProbabilit  SKRDBGE           GREATEST-CF   \n",
+              "124366  128870  MidZSchoolZProbabilit  SKRDBGE           GREATEST-CF   \n",
+              "124367  128871  MidZSchoolZProbabilit  SKRDBGE           GREATEST-CF   \n",
+              "124368  128872  MidZSchoolZProbabilit  SKRDBGE           GREATEST-CF   \n",
+              "124369  128873  MidZSchoolZProbabilit  SKRDBGE             ENTER-GCD   \n",
+              "\n",
+              "                               item  right  firstattempt   time  \n",
+              "0       META-VALUING-CAT-FEATURES-1      1             1  3.297  \n",
+              "1       META-VALUING-NUM-FEATURES-1      0             1  4.047  \n",
+              "2             CHOOSE-VAR-TYPE-NUM-1      1             1  1.593  \n",
+              "3       META-VALUING-NUM-FEATURES-1      0             0  2.922  \n",
+              "4             CHOOSE-VAR-TYPE-NUM-2      1             1  1.594  \n",
+              "...                             ...    ...           ...    ...  \n",
+              "124365          META-GREATEST-CF-33      1             1  1.920  \n",
+              "124366          META-GREATEST-CF-34      1             1  3.790  \n",
+              "124367          META-GREATEST-CF-35      0             1  2.800  \n",
+              "124368          META-GREATEST-CF-35      0             0  1.980  \n",
+              "124369           ENTER-GCD-SHAPES-8      1             1  3.020  \n",
+              "\n",
+              "[124370 rows x 8 columns]"
+            ],
+            "text/html": [
+              "\n",
+              "  <div id=\"df-56541126-7ebb-4f6c-b193-e3ae7247945f\">\n",
+              "    <div class=\"colab-df-container\">\n",
+              "      <div>\n",
+              "<style scoped>\n",
+              "    .dataframe tbody tr th:only-of-type {\n",
+              "        vertical-align: middle;\n",
+              "    }\n",
+              "\n",
+              "    .dataframe tbody tr th {\n",
+              "        vertical-align: top;\n",
+              "    }\n",
+              "\n",
+              "    .dataframe thead th {\n",
+              "        text-align: right;\n",
+              "    }\n",
+              "</style>\n",
+              "<table border=\"1\" class=\"dataframe\">\n",
+              "  <thead>\n",
+              "    <tr style=\"text-align: right;\">\n",
+              "      <th></th>\n",
+              "      <th>ID</th>\n",
+              "      <th>Lesson</th>\n",
+              "      <th>Student</th>\n",
+              "      <th>KC</th>\n",
+              "      <th>item</th>\n",
+              "      <th>right</th>\n",
+              "      <th>firstattempt</th>\n",
+              "      <th>time</th>\n",
+              "    </tr>\n",
+              "  </thead>\n",
+              "  <tbody>\n",
+              "    <tr>\n",
+              "      <th>0</th>\n",
+              "      <td>0</td>\n",
+              "      <td>Splot</td>\n",
+              "      <td>AGUFADE</td>\n",
+              "      <td>VALUING-CAT-FEATURES</td>\n",
+              "      <td>META-VALUING-CAT-FEATURES-1</td>\n",
+              "      <td>1</td>\n",
+              "      <td>1</td>\n",
+              "      <td>3.297</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>1</th>\n",
+              "      <td>1</td>\n",
+              "      <td>Splot</td>\n",
+              "      <td>AGUFADE</td>\n",
+              "      <td>VALUING-NUM-FEATURES</td>\n",
+              "      <td>META-VALUING-NUM-FEATURES-1</td>\n",
+              "      <td>0</td>\n",
+              "      <td>1</td>\n",
+              "      <td>4.047</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>2</th>\n",
+              "      <td>2</td>\n",
+              "      <td>Splot</td>\n",
+              "      <td>AGUFADE</td>\n",
+              "      <td>CHOOSE-VAR-TYPE</td>\n",
+              "      <td>CHOOSE-VAR-TYPE-NUM-1</td>\n",
+              "      <td>1</td>\n",
+              "      <td>1</td>\n",
+              "      <td>1.593</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>3</th>\n",
+              "      <td>3</td>\n",
+              "      <td>Splot</td>\n",
+              "      <td>AGUFADE</td>\n",
+              "      <td>VALUING-NUM-FEATURES</td>\n",
+              "      <td>META-VALUING-NUM-FEATURES-1</td>\n",
+              "      <td>0</td>\n",
+              "      <td>0</td>\n",
+              "      <td>2.922</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>4</th>\n",
+              "      <td>4</td>\n",
+              "      <td>Splot</td>\n",
+              "      <td>AGUFADE</td>\n",
+              "      <td>CHOOSE-VAR-TYPE</td>\n",
+              "      <td>CHOOSE-VAR-TYPE-NUM-2</td>\n",
+              "      <td>1</td>\n",
+              "      <td>1</td>\n",
+              "      <td>1.594</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>...</th>\n",
+              "      <td>...</td>\n",
+              "      <td>...</td>\n",
+              "      <td>...</td>\n",
+              "      <td>...</td>\n",
+              "      <td>...</td>\n",
+              "      <td>...</td>\n",
+              "      <td>...</td>\n",
+              "      <td>...</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>124365</th>\n",
+              "      <td>128869</td>\n",
+              "      <td>MidZSchoolZProbabilit</td>\n",
+              "      <td>SKRDBGE</td>\n",
+              "      <td>GREATEST-CF</td>\n",
+              "      <td>META-GREATEST-CF-33</td>\n",
+              "      <td>1</td>\n",
+              "      <td>1</td>\n",
+              "      <td>1.920</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>124366</th>\n",
+              "      <td>128870</td>\n",
+              "      <td>MidZSchoolZProbabilit</td>\n",
+              "      <td>SKRDBGE</td>\n",
+              "      <td>GREATEST-CF</td>\n",
+              "      <td>META-GREATEST-CF-34</td>\n",
+              "      <td>1</td>\n",
+              "      <td>1</td>\n",
+              "      <td>3.790</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>124367</th>\n",
+              "      <td>128871</td>\n",
+              "      <td>MidZSchoolZProbabilit</td>\n",
+              "      <td>SKRDBGE</td>\n",
+              "      <td>GREATEST-CF</td>\n",
+              "      <td>META-GREATEST-CF-35</td>\n",
+              "      <td>0</td>\n",
+              "      <td>1</td>\n",
+              "      <td>2.800</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>124368</th>\n",
+              "      <td>128872</td>\n",
+              "      <td>MidZSchoolZProbabilit</td>\n",
+              "      <td>SKRDBGE</td>\n",
+              "      <td>GREATEST-CF</td>\n",
+              "      <td>META-GREATEST-CF-35</td>\n",
+              "      <td>0</td>\n",
+              "      <td>0</td>\n",
+              "      <td>1.980</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>124369</th>\n",
+              "      <td>128873</td>\n",
+              "      <td>MidZSchoolZProbabilit</td>\n",
+              "      <td>SKRDBGE</td>\n",
+              "      <td>ENTER-GCD</td>\n",
+              "      <td>ENTER-GCD-SHAPES-8</td>\n",
+              "      <td>1</td>\n",
+              "      <td>1</td>\n",
+              "      <td>3.020</td>\n",
+              "    </tr>\n",
+              "  </tbody>\n",
+              "</table>\n",
+              "<p>124370 rows × 8 columns</p>\n",
+              "</div>\n",
+              "      <button class=\"colab-df-convert\" onclick=\"convertToInteractive('df-56541126-7ebb-4f6c-b193-e3ae7247945f')\"\n",
+              "              title=\"Convert this dataframe to an interactive table.\"\n",
+              "              style=\"display:none;\">\n",
+              "        \n",
+              "  <svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24px\"viewBox=\"0 0 24 24\"\n",
+              "       width=\"24px\">\n",
+              "    <path d=\"M0 0h24v24H0V0z\" fill=\"none\"/>\n",
+              "    <path d=\"M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z\"/><path d=\"M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z\"/>\n",
+              "  </svg>\n",
+              "      </button>\n",
+              "      \n",
+              "  <style>\n",
+              "    .colab-df-container {\n",
+              "      display:flex;\n",
+              "      flex-wrap:wrap;\n",
+              "      gap: 12px;\n",
+              "    }\n",
+              "\n",
+              "    .colab-df-convert {\n",
+              "      background-color: #E8F0FE;\n",
+              "      border: none;\n",
+              "      border-radius: 50%;\n",
+              "      cursor: pointer;\n",
+              "      display: none;\n",
+              "      fill: #1967D2;\n",
+              "      height: 32px;\n",
+              "      padding: 0 0 0 0;\n",
+              "      width: 32px;\n",
+              "    }\n",
+              "\n",
+              "    .colab-df-convert:hover {\n",
+              "      background-color: #E2EBFA;\n",
+              "      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);\n",
+              "      fill: #174EA6;\n",
+              "    }\n",
+              "\n",
+              "    [theme=dark] .colab-df-convert {\n",
+              "      background-color: #3B4455;\n",
+              "      fill: #D2E3FC;\n",
+              "    }\n",
+              "\n",
+              "    [theme=dark] .colab-df-convert:hover {\n",
+              "      background-color: #434B5C;\n",
+              "      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);\n",
+              "      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));\n",
+              "      fill: #FFFFFF;\n",
+              "    }\n",
+              "  </style>\n",
+              "\n",
+              "      <script>\n",
+              "        const buttonEl =\n",
+              "          document.querySelector('#df-56541126-7ebb-4f6c-b193-e3ae7247945f button.colab-df-convert');\n",
+              "        buttonEl.style.display =\n",
+              "          google.colab.kernel.accessAllowed ? 'block' : 'none';\n",
+              "\n",
+              "        async function convertToInteractive(key) {\n",
+              "          const element = document.querySelector('#df-56541126-7ebb-4f6c-b193-e3ae7247945f');\n",
+              "          const dataTable =\n",
+              "            await google.colab.kernel.invokeFunction('convertToInteractive',\n",
+              "                                                     [key], {});\n",
+              "          if (!dataTable) return;\n",
+              "\n",
+              "          const docLinkHtml = 'Like what you see? Visit the ' +\n",
+              "            '<a target=\"_blank\" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'\n",
+              "            + ' to learn more about interactive tables.';\n",
+              "          element.innerHTML = '';\n",
+              "          dataTable['output_type'] = 'display_data';\n",
+              "          await google.colab.output.renderOutput(dataTable, element);\n",
+              "          const docLink = document.createElement('div');\n",
+              "          docLink.innerHTML = docLinkHtml;\n",
+              "          element.appendChild(docLink);\n",
+              "        }\n",
+              "      </script>\n",
+              "    </div>\n",
+              "  </div>\n",
+              "  "
+            ]
+          },
+          "metadata": {},
+          "execution_count": 2
+        }
+      ],
+      "source": [
+        "# read the data\n",
+        "data = pd.read_csv('KI_dataset.csv')\n",
+        "data"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### 2. pyBKT Model"
+      ],
+      "metadata": {
+        "id": "WkIWxB1YNZnQ"
+      },
+      "id": "WkIWxB1YNZnQ"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "ceeaf0da",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "ceeaf0da",
+        "outputId": "3bce4eab-2099-4b8a-dc26-de27759a80d5"
+      },
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Collecting pyBKT\n",
+            "  Downloading pyBKT-1.4.tar.gz (32.7 MB)\n",
+            "\u001b[K     |████████████████████████████████| 32.7 MB 405 kB/s \n",
+            "\u001b[?25hRequirement already satisfied: numpy in /usr/local/lib/python3.7/dist-packages (from pyBKT) (1.21.5)\n",
+            "Requirement already satisfied: sklearn in /usr/local/lib/python3.7/dist-packages (from pyBKT) (0.0)\n",
+            "Requirement already satisfied: pandas in /usr/local/lib/python3.7/dist-packages (from pyBKT) (1.3.5)\n",
+            "Requirement already satisfied: requests in /usr/local/lib/python3.7/dist-packages (from pyBKT) (2.23.0)\n",
+            "Requirement already satisfied: python-dateutil>=2.7.3 in /usr/local/lib/python3.7/dist-packages (from pandas->pyBKT) (2.8.2)\n",
+            "Requirement already satisfied: pytz>=2017.3 in /usr/local/lib/python3.7/dist-packages (from pandas->pyBKT) (2018.9)\n",
+            "Requirement already satisfied: six>=1.5 in /usr/local/lib/python3.7/dist-packages (from python-dateutil>=2.7.3->pandas->pyBKT) (1.15.0)\n",
+            "Requirement already satisfied: chardet<4,>=3.0.2 in /usr/local/lib/python3.7/dist-packages (from requests->pyBKT) (3.0.4)\n",
+            "Requirement already satisfied: certifi>=2017.4.17 in /usr/local/lib/python3.7/dist-packages (from requests->pyBKT) (2021.10.8)\n",
+            "Requirement already satisfied: urllib3!=1.25.0,!=1.25.1,<1.26,>=1.21.1 in /usr/local/lib/python3.7/dist-packages (from requests->pyBKT) (1.24.3)\n",
+            "Requirement already satisfied: idna<3,>=2.5 in /usr/local/lib/python3.7/dist-packages (from requests->pyBKT) (2.10)\n",
+            "Requirement already satisfied: scikit-learn in /usr/local/lib/python3.7/dist-packages (from sklearn->pyBKT) (1.0.2)\n",
+            "Requirement already satisfied: scipy>=1.1.0 in /usr/local/lib/python3.7/dist-packages (from scikit-learn->sklearn->pyBKT) (1.4.1)\n",
+            "Requirement already satisfied: joblib>=0.11 in /usr/local/lib/python3.7/dist-packages (from scikit-learn->sklearn->pyBKT) (1.1.0)\n",
+            "Requirement already satisfied: threadpoolctl>=2.0.0 in /usr/local/lib/python3.7/dist-packages (from scikit-learn->sklearn->pyBKT) (3.1.0)\n",
+            "Building wheels for collected packages: pyBKT\n",
+            "  Building wheel for pyBKT (setup.py) ... \u001b[?25l\u001b[?25hdone\n",
+            "  Created wheel for pyBKT: filename=pyBKT-1.4-cp37-cp37m-linux_x86_64.whl size=1024681 sha256=e4a60ff41768724845c232ff6b7d0b2c45d8f3ed3cc893a7a7c1b9cde0e662c4\n",
+            "  Stored in directory: /root/.cache/pip/wheels/d4/bb/83/0fe92b544252ddb34ad6bf4fd2659abd64140612b2d418cd07\n",
+            "Successfully built pyBKT\n",
+            "Installing collected packages: pyBKT\n",
+            "Successfully installed pyBKT-1.4\n"
+          ]
+        }
+      ],
+      "source": [
+        "# Install pyBKT from pip!\n",
+        "!pip install pyBKT\n",
+        "\n",
+        "# Import all required packages including pyBKT.models.Model\n",
+        "from pyBKT.models import Model\n",
+        "import matplotlib.pyplot as plt"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "###3. Training Models & Model Evaluation"
+      ],
+      "metadata": {
+        "id": "RXrjU20RNDur"
+      },
+      "id": "RXrjU20RNDur"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "**3.1. Model 1**"
+      ],
+      "metadata": {
+        "id": "zWwKq0o1dhPJ"
+      },
+      "id": "zWwKq0o1dhPJ"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "291db91f",
+      "metadata": {
+        "id": "291db91f"
+      },
+      "outputs": [],
+      "source": [
+        "# Initialize model with seed so we can consistently replicate the results and avoid as much randomness as possible\n",
+        "model = Model(seed = 17, num_fits = 1)"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Specify the columns corresponding to each required column\n",
+        "# In this case, the user ID that pyBKT expects is specified by the column ID in the dataset, \n",
+        "# the skill_name is specified by a column KC \n",
+        "# and the correctness is specified by the right column in the dataset.\n",
+        "defaults = {'user_id': 'ID', 'skill_name': 'KC', 'correct': 'right'}"
+      ],
+      "metadata": {
+        "id": "y1ib9y4RyHe7"
+      },
+      "id": "y1ib9y4RyHe7",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "c4c715ce",
+      "metadata": {
+        "id": "c4c715ce"
+      },
+      "outputs": [],
+      "source": [
+        "uniqueKC = data['KC'].unique()"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "14eed21a",
+      "metadata": {
+        "id": "14eed21a"
+      },
+      "outputs": [],
+      "source": [
+        "# Train a simple BKT model on all skills in 'KC'\n",
+        "model.fit(data=data, skills = uniqueKC, defaults=defaults)"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "9912ce3b",
+      "metadata": {
+        "id": "9912ce3b"
+      },
+      "outputs": [],
+      "source": [
+        "# Evaluate the RMSE of the model on the training data.\n",
+        "# The default evaluate metric is RMSE.\n",
+        "training_rmse = model.evaluate(data = data)\n",
+        "\n",
+        "# Evaluate the AUC of the model on the training data. \n",
+        "training_auc = model.evaluate(data = data, metric = 'auc')"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "b7b0b111",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "b7b0b111",
+        "outputId": "57528494-8f86-4ad5-d405-8158f79383eb"
+      },
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "RMSE of the model is:  0.42690204307284446\n",
+            "AUD of the model is:  0.7595121642568298\n"
+          ]
+        }
+      ],
+      "source": [
+        "# Print the RMSE and AUC of the model\n",
+        "print('RMSE of the model is: ', training_rmse)\n",
+        "print('AUD of the model is: ', training_auc)"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# View the trained parameters\n",
+        "print(model.params())"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "NLYuwtzYdyHj",
+        "outputId": "9fdd990b-9765-44dc-9fb2-ad84e0fb3a3e"
+      },
+      "id": "NLYuwtzYdyHj",
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "                                       value\n",
+            "skill                param   class          \n",
+            "VALUING-CAT-FEATURES prior   default 0.63987\n",
+            "                     learns  default 1.00000\n",
+            "                     guesses default 0.22735\n",
+            "                     slips   default 0.05363\n",
+            "                     forgets default 0.00000\n",
+            "...                                      ...\n",
+            "ENTER-GCD            prior   default 0.86753\n",
+            "                     learns  default 1.00000\n",
+            "                     guesses default 0.47316\n",
+            "                     slips   default 0.05395\n",
+            "                     forgets default 0.00000\n",
+            "\n",
+            "[330 rows x 1 columns]\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "The model parameters show P(Ln): the probability the skill is already known before the first opportunity to use the skill in problem solving, P(T): the probability the skill will be learned at each opportunity to use the skill, P(G): the probability the student will guess correctly if the skill is not known, and P(S): the probability the student will slip (make a mistake) if the skill is known. Then we can use the formula P(Correct) = P(Ln)\\*(1-P(S)) + (1-P(Ln))\\*P(G) to predict whether a particular student will be able to answer a question correctly at a given stage of their learning."
+      ],
+      "metadata": {
+        "id": "ApFQO5TecRNl"
+      },
+      "id": "ApFQO5TecRNl"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "**3.2. Model 2**"
+      ],
+      "metadata": {
+        "id": "bJYExMIrNyMb"
+      },
+      "id": "bJYExMIrNyMb"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "104e910f",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "104e910f",
+        "outputId": "f3a6ee38-c469-41e1-973a-abfa8e8f8f5d"
+      },
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "RMSE of the model is:  0.3859965524166319\n",
+            "AUD of the model is:  0.8432145757737171\n"
+          ]
+        }
+      ],
+      "source": [
+        "# Specify the columns corresponding to each required column\n",
+        "# In this case, the user ID that pyBKT expects is specified by the column ID in the dataset, \n",
+        "# the skill_name is specified by a column item \n",
+        "# and the correctness is specified by the right column in the dataset.\n",
+        "defaults = {'user_id': 'ID', 'skill_name': 'item', 'correct': 'right'}\n",
+        "\n",
+        "# Initialize model with seed\n",
+        "model2 = Model(seed = 17, num_fits = 1)\n",
+        "\n",
+        "# Train a simple BKT model on all skills in 'item'\n",
+        "model2.fit(data=data, skills = data['item'].unique(), defaults=defaults)\n",
+        "\n",
+        "# Evaluate the RMSE of the model on the training data\n",
+        "training_rmse2 = model2.evaluate(data = data)\n",
+        "\n",
+        "# Evaluate the AUC of the model on the training data\n",
+        "training_auc2 = model2.evaluate(data = data, metric = 'auc')\n",
+        "\n",
+        "# Print the RMSE and AUC of the model\n",
+        "print('RMSE of the model is: ', training_rmse2)\n",
+        "print('AUD of the model is: ', training_auc2)"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# View the trained parameters\n",
+        "print(model2.params())"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "QjRIsvks7u4p",
+        "outputId": "4fbd9709-6fbc-4e3f-b17a-e0ef65d88d05"
+      },
+      "id": "QjRIsvks7u4p",
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "                                                      value\n",
+            "skill                               param   class          \n",
+            "META-VALUING-CAT-FEATURES-1         prior   default 0.56594\n",
+            "                                    learns  default 1.00000\n",
+            "                                    guesses default 0.65748\n",
+            "                                    slips   default 0.00768\n",
+            "                                    forgets default 0.00000\n",
+            "...                                                     ...\n",
+            "ENTER-REDUCED-PROBABILITY-SHAPES-23 prior   default 0.89533\n",
+            "                                    learns  default 1.00000\n",
+            "                                    guesses default 1.00000\n",
+            "                                    slips   default 0.00000\n",
+            "                                    forgets default 0.00000\n",
+            "\n",
+            "[10440 rows x 1 columns]\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "The model parameters show P(Ln): the probability the skill is already known before the first opportunity to use the skill in problem solving, P(T): the probability the skill will be learned at each opportunity to use the skill, P(G): the probability the student will guess correctly if the skill is not known, and P(S): the probability the student will slip (make a mistake) if the skill is known. Then we can use the formula P(Correct) = P(Ln)\\*(1-P(S)) + (1-P(Ln))\\*P(G) to predict whether a particular student will be able to answer a question correctly at a given stage of their learning."
+      ],
+      "metadata": {
+        "id": "ghSfIkTaawCi"
+      },
+      "id": "ghSfIkTaawCi"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### 4. Model Cross-Validation"
+      ],
+      "metadata": {
+        "id": "hWsL0cmDeFTe"
+      },
+      "id": "hWsL0cmDeFTe"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "defaults = {'user_id': 'ID', 'skill_name': 'KC', 'correct': 'right'}"
+      ],
+      "metadata": {
+        "id": "T7KXUpBuRksj"
+      },
+      "id": "T7KXUpBuRksj",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Crossvalidate with 5 folds on all skills in 'KC'\n",
+        "crossvalidated_1 = model.crossvalidate(defaults = defaults, data = data, skills = data['KC'].unique(),\n",
+        "                                              folds = 5)"
+      ],
+      "metadata": {
+        "id": "x9ytmch5RW26"
+      },
+      "id": "x9ytmch5RW26",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print(crossvalidated_1)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "rYfkIFzRSUfZ",
+        "outputId": "d52e690a-efdb-4d9d-c51d-044f740fda25"
+      },
+      "id": "rYfkIFzRSUfZ",
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "                                        rmse\n",
+            "skill                                       \n",
+            "VALUING-CAT-FEATURES                 0.46376\n",
+            "VALUING-NUM-FEATURES                 0.43130\n",
+            "CHOOSE-VAR-TYPE                      0.22230\n",
+            "CHOOSE-OK-SPLOT                      0.30007\n",
+            "CHOOSE-OK-BG                         0.28505\n",
+            "...                                      ...\n",
+            "MODEL-CUBE-PERPENDICULAR-EDGE-LENGTH 0.49735\n",
+            "MODEL-IDENTIFY-CUBE-PRISM-FACE       0.31649\n",
+            "COMPLETED-TOOL-CELL                      NaN\n",
+            "GREATEST-CF                          0.47473\n",
+            "ENTER-GCD                            0.31841\n",
+            "\n",
+            "[66 rows x 1 columns]\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Explore the model accuracy for one particular skill (VALUING-CAT-FEATURES) using cross-validation\n",
+        "skill = 'VALUING-CAT-FEATURES'\n",
+        "metric = 'rmse'\n",
+        "\n",
+        "simple_cv = model.crossvalidate(defaults = defaults, data = data, skills = skill, \n",
+        "                                metric = metric)\n",
+        "simple_cv"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 112
+        },
+        "id": "zkc4HNtDT-nE",
+        "outputId": "b9893788-334a-4a55-c5f8-c1e16e6c9fe3"
+      },
+      "id": "zkc4HNtDT-nE",
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "                        rmse\n",
+              "skill                       \n",
+              "VALUING-CAT-FEATURES 0.46376"
+            ],
+            "text/html": [
+              "\n",
+              "  <div id=\"df-9b26b20e-491d-415f-b426-31873e034a6f\">\n",
+              "    <div class=\"colab-df-container\">\n",
+              "      <div>\n",
+              "<style scoped>\n",
+              "    .dataframe tbody tr th:only-of-type {\n",
+              "        vertical-align: middle;\n",
+              "    }\n",
+              "\n",
+              "    .dataframe tbody tr th {\n",
+              "        vertical-align: top;\n",
+              "    }\n",
+              "\n",
+              "    .dataframe thead th {\n",
+              "        text-align: right;\n",
+              "    }\n",
+              "</style>\n",
+              "<table border=\"1\" class=\"dataframe\">\n",
+              "  <thead>\n",
+              "    <tr style=\"text-align: right;\">\n",
+              "      <th></th>\n",
+              "      <th>rmse</th>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>skill</th>\n",
+              "      <th></th>\n",
+              "    </tr>\n",
+              "  </thead>\n",
+              "  <tbody>\n",
+              "    <tr>\n",
+              "      <th>VALUING-CAT-FEATURES</th>\n",
+              "      <td>0.46376</td>\n",
+              "    </tr>\n",
+              "  </tbody>\n",
+              "</table>\n",
+              "</div>\n",
+              "      <button class=\"colab-df-convert\" onclick=\"convertToInteractive('df-9b26b20e-491d-415f-b426-31873e034a6f')\"\n",
+              "              title=\"Convert this dataframe to an interactive table.\"\n",
+              "              style=\"display:none;\">\n",
+              "        \n",
+              "  <svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24px\"viewBox=\"0 0 24 24\"\n",
+              "       width=\"24px\">\n",
+              "    <path d=\"M0 0h24v24H0V0z\" fill=\"none\"/>\n",
+              "    <path d=\"M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z\"/><path d=\"M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z\"/>\n",
+              "  </svg>\n",
+              "      </button>\n",
+              "      \n",
+              "  <style>\n",
+              "    .colab-df-container {\n",
+              "      display:flex;\n",
+              "      flex-wrap:wrap;\n",
+              "      gap: 12px;\n",
+              "    }\n",
+              "\n",
+              "    .colab-df-convert {\n",
+              "      background-color: #E8F0FE;\n",
+              "      border: none;\n",
+              "      border-radius: 50%;\n",
+              "      cursor: pointer;\n",
+              "      display: none;\n",
+              "      fill: #1967D2;\n",
+              "      height: 32px;\n",
+              "      padding: 0 0 0 0;\n",
+              "      width: 32px;\n",
+              "    }\n",
+              "\n",
+              "    .colab-df-convert:hover {\n",
+              "      background-color: #E2EBFA;\n",
+              "      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);\n",
+              "      fill: #174EA6;\n",
+              "    }\n",
+              "\n",
+              "    [theme=dark] .colab-df-convert {\n",
+              "      background-color: #3B4455;\n",
+              "      fill: #D2E3FC;\n",
+              "    }\n",
+              "\n",
+              "    [theme=dark] .colab-df-convert:hover {\n",
+              "      background-color: #434B5C;\n",
+              "      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);\n",
+              "      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));\n",
+              "      fill: #FFFFFF;\n",
+              "    }\n",
+              "  </style>\n",
+              "\n",
+              "      <script>\n",
+              "        const buttonEl =\n",
+              "          document.querySelector('#df-9b26b20e-491d-415f-b426-31873e034a6f button.colab-df-convert');\n",
+              "        buttonEl.style.display =\n",
+              "          google.colab.kernel.accessAllowed ? 'block' : 'none';\n",
+              "\n",
+              "        async function convertToInteractive(key) {\n",
+              "          const element = document.querySelector('#df-9b26b20e-491d-415f-b426-31873e034a6f');\n",
+              "          const dataTable =\n",
+              "            await google.colab.kernel.invokeFunction('convertToInteractive',\n",
+              "                                                     [key], {});\n",
+              "          if (!dataTable) return;\n",
+              "\n",
+              "          const docLinkHtml = 'Like what you see? Visit the ' +\n",
+              "            '<a target=\"_blank\" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'\n",
+              "            + ' to learn more about interactive tables.';\n",
+              "          element.innerHTML = '';\n",
+              "          dataTable['output_type'] = 'display_data';\n",
+              "          await google.colab.output.renderOutput(dataTable, element);\n",
+              "          const docLink = document.createElement('div');\n",
+              "          docLink.innerHTML = docLinkHtml;\n",
+              "          element.appendChild(docLink);\n",
+              "        }\n",
+              "      </script>\n",
+              "    </div>\n",
+              "  </div>\n",
+              "  "
+            ]
+          },
+          "metadata": {},
+          "execution_count": 25
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "defaults = {'user_id': 'ID', 'skill_name': 'item', 'correct': 'right'}"
+      ],
+      "metadata": {
+        "id": "DisnvvEyRoI5"
+      },
+      "id": "DisnvvEyRoI5",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "572dc759",
+      "metadata": {
+        "id": "572dc759"
+      },
+      "outputs": [],
+      "source": [
+        "# Crossvalidate with 5 folds on all skills in 'item'\n",
+        "crossvalidated_2 = model2.crossvalidate(defaults = defaults, data = data, skills = data['item'].unique(),\n",
+        "                                              folds = 5)"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "2cc157a7",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "2cc157a7",
+        "outputId": "1fca817a-5007-44d6-d68c-abbf66339dfb"
+      },
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "                                       rmse\n",
+            "skill                                      \n",
+            "META-VALUING-CAT-FEATURES-1         0.35913\n",
+            "META-VALUING-NUM-FEATURES-1         0.45323\n",
+            "CHOOSE-VAR-TYPE-NUM-1               0.07226\n",
+            "CHOOSE-VAR-TYPE-NUM-2               0.15043\n",
+            "META-VALUING-NUM-FEATURES-2         0.44824\n",
+            "...                                     ...\n",
+            "ENTER-REDUCED-PROBABILITY-SHAPES-19     NaN\n",
+            "ENTER-REDUCED-PROBABILITY-SHAPES-20     NaN\n",
+            "ENTER-REDUCED-PROBABILITY-SHAPES-21     NaN\n",
+            "ENTER-REDUCED-PROBABILITY-SHAPES-22     NaN\n",
+            "ENTER-REDUCED-PROBABILITY-SHAPES-23     NaN\n",
+            "\n",
+            "[2088 rows x 1 columns]\n"
+          ]
+        }
+      ],
+      "source": [
+        "print(crossvalidated_2)"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Explore the model accuracy for one particular skill (META-VALUING-CAT-FEATURES-1) using cross-validation\n",
+        "skill = 'META-VALUING-CAT-FEATURES-1'\n",
+        "metric = 'rmse'\n",
+        "\n",
+        "simple_cv2 = model2.crossvalidate(defaults = defaults, data = data, skills = skill, \n",
+        "                                metric = metric)\n",
+        "simple_cv2"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 112
+        },
+        "id": "VLFz1F_5VFQS",
+        "outputId": "440e54bb-bf27-4990-af2c-e95b333dbdc9"
+      },
+      "id": "VLFz1F_5VFQS",
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "                               rmse\n",
+              "skill                              \n",
+              "META-VALUING-CAT-FEATURES-1 0.36012"
+            ],
+            "text/html": [
+              "\n",
+              "  <div id=\"df-e58b7f86-9649-493c-8e2f-8940d7df2c34\">\n",
+              "    <div class=\"colab-df-container\">\n",
+              "      <div>\n",
+              "<style scoped>\n",
+              "    .dataframe tbody tr th:only-of-type {\n",
+              "        vertical-align: middle;\n",
+              "    }\n",
+              "\n",
+              "    .dataframe tbody tr th {\n",
+              "        vertical-align: top;\n",
+              "    }\n",
+              "\n",
+              "    .dataframe thead th {\n",
+              "        text-align: right;\n",
+              "    }\n",
+              "</style>\n",
+              "<table border=\"1\" class=\"dataframe\">\n",
+              "  <thead>\n",
+              "    <tr style=\"text-align: right;\">\n",
+              "      <th></th>\n",
+              "      <th>rmse</th>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>skill</th>\n",
+              "      <th></th>\n",
+              "    </tr>\n",
+              "  </thead>\n",
+              "  <tbody>\n",
+              "    <tr>\n",
+              "      <th>META-VALUING-CAT-FEATURES-1</th>\n",
+              "      <td>0.36012</td>\n",
+              "    </tr>\n",
+              "  </tbody>\n",
+              "</table>\n",
+              "</div>\n",
+              "      <button class=\"colab-df-convert\" onclick=\"convertToInteractive('df-e58b7f86-9649-493c-8e2f-8940d7df2c34')\"\n",
+              "              title=\"Convert this dataframe to an interactive table.\"\n",
+              "              style=\"display:none;\">\n",
+              "        \n",
+              "  <svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24px\"viewBox=\"0 0 24 24\"\n",
+              "       width=\"24px\">\n",
+              "    <path d=\"M0 0h24v24H0V0z\" fill=\"none\"/>\n",
+              "    <path d=\"M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z\"/><path d=\"M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z\"/>\n",
+              "  </svg>\n",
+              "      </button>\n",
+              "      \n",
+              "  <style>\n",
+              "    .colab-df-container {\n",
+              "      display:flex;\n",
+              "      flex-wrap:wrap;\n",
+              "      gap: 12px;\n",
+              "    }\n",
+              "\n",
+              "    .colab-df-convert {\n",
+              "      background-color: #E8F0FE;\n",
+              "      border: none;\n",
+              "      border-radius: 50%;\n",
+              "      cursor: pointer;\n",
+              "      display: none;\n",
+              "      fill: #1967D2;\n",
+              "      height: 32px;\n",
+              "      padding: 0 0 0 0;\n",
+              "      width: 32px;\n",
+              "    }\n",
+              "\n",
+              "    .colab-df-convert:hover {\n",
+              "      background-color: #E2EBFA;\n",
+              "      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);\n",
+              "      fill: #174EA6;\n",
+              "    }\n",
+              "\n",
+              "    [theme=dark] .colab-df-convert {\n",
+              "      background-color: #3B4455;\n",
+              "      fill: #D2E3FC;\n",
+              "    }\n",
+              "\n",
+              "    [theme=dark] .colab-df-convert:hover {\n",
+              "      background-color: #434B5C;\n",
+              "      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);\n",
+              "      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));\n",
+              "      fill: #FFFFFF;\n",
+              "    }\n",
+              "  </style>\n",
+              "\n",
+              "      <script>\n",
+              "        const buttonEl =\n",
+              "          document.querySelector('#df-e58b7f86-9649-493c-8e2f-8940d7df2c34 button.colab-df-convert');\n",
+              "        buttonEl.style.display =\n",
+              "          google.colab.kernel.accessAllowed ? 'block' : 'none';\n",
+              "\n",
+              "        async function convertToInteractive(key) {\n",
+              "          const element = document.querySelector('#df-e58b7f86-9649-493c-8e2f-8940d7df2c34');\n",
+              "          const dataTable =\n",
+              "            await google.colab.kernel.invokeFunction('convertToInteractive',\n",
+              "                                                     [key], {});\n",
+              "          if (!dataTable) return;\n",
+              "\n",
+              "          const docLinkHtml = 'Like what you see? Visit the ' +\n",
+              "            '<a target=\"_blank\" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'\n",
+              "            + ' to learn more about interactive tables.';\n",
+              "          element.innerHTML = '';\n",
+              "          dataTable['output_type'] = 'display_data';\n",
+              "          await google.colab.output.renderOutput(dataTable, element);\n",
+              "          const docLink = document.createElement('div');\n",
+              "          docLink.innerHTML = docLinkHtml;\n",
+              "          element.appendChild(docLink);\n",
+              "        }\n",
+              "      </script>\n",
+              "    </div>\n",
+              "  </div>\n",
+              "  "
+            ]
+          },
+          "metadata": {},
+          "execution_count": 23
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "## Discussion\n",
+        "\n",
+        "In this assignment, our team created and trained two simple BKT models. The first model was trained on all skills in column KC in the dataset. The second model was trained on all skills in the column item in the dataset. Since we trained on a dataset that had unfamiliar columns to pyBKT, we specified mapping of column names in that dataset to expected pyBKT columns, which was referred to as the model defaults (i.e. it specifies the default column names to lookup in the dataset). The first model had an RMSE of 0.427 and AUC of 0.760. The second model had an RMSE of 0.386 and AUC of 0.843. So the accuracy of the second model was higher than the first one. Cross-validation presented a similar pattern, where model 1 showed lower RMSE than model 2.\n",
+        "\n",
+        "From the model parameters, we can know the values of P(Ln), P(T), P(G), and P(S). Then we can apply the formula P(Correct) = P(Ln)\\*(1-P(S)) + (1-P(Ln))\\*P(G) to predict whether a particular student will be able to answer a question correctly at a given stage of their learning."
+      ],
+      "metadata": {
+        "id": "6CEouIiuN9Rd"
+      },
+      "id": "6CEouIiuN9Rd"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "## Reference\n",
+        "Ramírez-Noriega, A., Juárez-Ramírez, R., & Martínez-Ramírez, Y. (2017). Evaluation module based on Bayesian networks to Intelligent Tutoring Systems. International Journal of Information Management, 37(1), 1488-1498."
+      ],
+      "metadata": {
+        "id": "AoUTmzv2YGwA"
+      },
+      "id": "AoUTmzv2YGwA"
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "display_name": "Python 3 (ipykernel)",
+      "language": "python",
+      "name": "python3"
+    },
+    "language_info": {
+      "codemirror_mode": {
+        "name": "ipython",
+        "version": 3
+      },
+      "file_extension": ".py",
+      "mimetype": "text/x-python",
+      "name": "python",
+      "nbconvert_exporter": "python",
+      "pygments_lexer": "ipython3",
+      "version": "3.7.4"
+    },
+    "colab": {
+      "name": "Mini_LA_Assignment_Knowledge_Inference.ipynb",
+      "provenance": [],
+      "collapsed_sections": []
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}
