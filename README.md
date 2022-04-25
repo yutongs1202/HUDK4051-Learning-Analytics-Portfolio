@@ -1,5 +1,5 @@
 # HUDK4051-Portfolio
-**Couese:** HUDK 4051
+**Course:** HUDK 4051
 
 **Author:** Yutong Shen
 ### Individual Coding Exercises:
