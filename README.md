@@ -13,3 +13,4 @@
 * [Classification & Predication](https://github.com/yutongs1202/HUDK4051-Portfolio/blob/main/Mini%20Learning%20Analytics%20Assignments/Mini_LA_Assignment_Classification_Prediction_01.ipynb)
 * [Knowledge Inference](https://github.com/yutongs1202/HUDK4051-Portfolio/blob/main/Mini%20Learning%20Analytics%20Assignments/Mini_LA_Assignment_Knowledge_Inference_v01.ipynb)
 * [Recommender System](https://github.com/yutongs1202/HUDK4051-Portfolio/blob/main/Mini%20Learning%20Analytics%20Assignments/Mini_LA_RS_v02.ipynb)
+* [Natural Language Processing](https://github.com/yutongs1202/HUDK4051-Portfolio/blob/main/Mini%20Learning%20Analytics%20Assignments/MiniLA_NLP_ipynb_v03.ipynb)
