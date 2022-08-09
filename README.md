@@ -1,4 +1,4 @@
-# HUDK4051-Portfolio
+# HUDK4051-Learning Analytics: Process and Theory-Portfolio
 **Course:** HUDK 4051
 
 **Author:** Yutong Shen
